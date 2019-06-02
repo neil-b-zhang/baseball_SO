@@ -8,6 +8,8 @@ Created on Wed May 29 12:14:56 2019
 import pandas as pd
 from datetime import datetime
 import sys
+from pathlib import Path
+
 
 COLUMN_LABELS = ['u2.5', 'o2.5', 'u3', 'o3', 'u3.5', 'o3.5', 'u4', 'o4', 
                  'u4.5', 'o4.5', 'u5', 'o5', 'u5.5', 'o5.5', 'u6', 'o6',
@@ -72,8 +74,6 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
                                 'odds': deci_odds,
                                 'to_win': [to_win]})
 
-        print('temp_df')
-        print(temp_df)
         return temp_df
     else:
         print('    No value on the {}.'.format(label))
@@ -127,11 +127,6 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     o_df = kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, team)
     u_df = kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, team)
     
-    print('o_df')
-    print(o_df)
-    print('u_df')
-    print(u_df)
-    
     # save bets to dataframe
     bets_df = pd.DataFrame()
     if len(o_df)>0:
@@ -141,10 +136,29 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
         print('under')
         bets_df = pd.concat([bets_df, u_df])
     
-    print('bets_df')
-    print(bets_df)
     return bets_df
+    
+def output_csv(df, reset):
+    """
+    function for checking if any bets were already saved and creating an 
+    updated saved bets csv for the current day
+    
+       df = saved bets from current run
+    reset = bool for deleting previous bet data for today
+    """        
+    
+    # get file name based on date
+    now = datetime.now() # current date and time
+    file_name = 'data/saved_bets_{}.csv'.format(now.strftime("%m%d%Y"))
+    
+    # check if file for current day already exists
+    file = Path(file_name)
+    if file.is_file() and not reset:
+        prev_df = pd.read_csv(file_name)
+        df = pd.concat([prev_df, df])
         
+    df.to_csv(file, index = False)
+    
 def main():
     # get odds in decimal form from probabilities
     calc_odds_df = odds_calc()
@@ -159,6 +173,7 @@ def main():
     total_bankroll = int(input('What is your total bankroll?\n'))
     
     saved_bets = pd.DataFrame()
+    reset = False # variable for resetting saved bets on the day
     while value_checking:    
         # getting user inputs
         #TODO: error catching is probably useful
@@ -176,7 +191,7 @@ def main():
                           calc_odds_df.loc[calc_odds_df['team'] == pitcher,'name'].item()))
                     checking_pitcher = False
             elif pitcher == 'q':
-                sys.exit('\nUSER QUIT')
+                break
             elif pitcher not in calc_odds_df.name.tolist():
                 print('     INVALID PITCHER. PLEASE CHECK YOUR INPUT')
             else:
@@ -196,12 +211,15 @@ def main():
         #    print('Value not found, please check your inputs')
             
         user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
+        if user_cont == 'reset':
+            print('    RESETTING PREVIOUSLY SAVED BETS FOR TODAY...')
+            reset = True
+            user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
         if user_cont == 'n':
             value_checking = False
-   
+        
     # save all bets with value to csv
-    now = datetime.now() # current date and time
-    saved_bets.to_csv('data/saved_bets_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
+    output_csv(saved_bets, reset)
     
     print('done')
     
