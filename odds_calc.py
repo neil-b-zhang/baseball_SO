@@ -65,8 +65,15 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
     # generate outputs
     if output > 0:
         bet_amount = round(output*tbr, 2)
+        rounded_io = round(implied_odds, 2)        
         implied_edge = round((deci_odds-implied_odds)/deci_odds*100, 1)
         to_win = round(bet_amount*deci_odds, 2)
+        
+        print('    You should bet ${} on {} {} strikeouts.'.format(bet_amount, label, SO))        
+        print('        Sportsbook odds: {}'.format(deci_odds))
+        print('        Implied expected odds: {}'.format(rounded_io))
+        print('        Implied edge over book: {}%'.format(implied_edge))
+        
         temp_df = pd.DataFrame({'name': name,
                                 'team': team,
                                 'edge': implied_edge,
@@ -130,10 +137,8 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     # save bets to dataframe
     bets_df = pd.DataFrame()
     if len(o_df)>0:
-        print('over')
         bets_df = pd.concat([bets_df, o_df])
     if len(u_df)>0:
-        print('under')
         bets_df = pd.concat([bets_df, u_df])
     
     return bets_df
