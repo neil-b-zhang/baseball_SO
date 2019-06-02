@@ -33,7 +33,7 @@ def odds_calc():
     
     # save output based on date run
     now = datetime.now() # current date and time
-    output_df.round(2).to_csv('/data/calculated_odds_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
+    output_df.round(2).to_csv('data/calculated_odds_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
     
     return output_df
 
@@ -63,25 +63,21 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
     # generate outputs
     if output > 0:
         bet_amount = round(output*tbr, 2)
-        rounded_io = round(implied_odds, 2)
         implied_edge = round((deci_odds-implied_odds)/deci_odds*100, 1)
-        
-        print('    You should bet ${} on {} {} strikeouts.'.format(bet_amount, label, SO))        
-        print('        Sportsbook odds: {}'.format(deci_odds))
-        print('        Implied expected odds: {}'.format(rounded_io))
-        print('        Implied edge over book: {}%'.format(implied_edge))
-        
-        # save bets with value to dataframe
-        temp_df = pd.DataFrame()
-        temp_df.name = name
-        temp_df.team = team
-        temp_df.edge = implied_edge
-        temp_df.bet = bet_amount
-        temp_df.to_win = round*(bet_amount * deci_odds, 2)
+        to_win = round(bet_amount*deci_odds, 2)
+        temp_df = pd.DataFrame({'name': name,
+                                'team': team,
+                                'edge': implied_edge,
+                                'bet': bet_amount,
+                                'odds': deci_odds,
+                                'to_win': [to_win]})
+
+        print('temp_df')
+        print(temp_df)
         return temp_df
     else:
         print('    No value on the {}.'.format(label))
-        return None
+        return pd.DataFrame()
 
 def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     """
@@ -131,12 +127,22 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     o_df = kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, team)
     u_df = kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, team)
     
-    bets_df = pd.DataFrame()
-    if o_df != None:
-        bets_df.concat(bets_df, o_df)
-    if u_df != None:
-        bets_df.concat(bets_df, u_df)
+    print('o_df')
+    print(o_df)
+    print('u_df')
+    print(u_df)
     
+    # save bets to dataframe
+    bets_df = pd.DataFrame()
+    if len(o_df)>0:
+        print('over')
+        bets_df = pd.concat([bets_df, o_df])
+    if len(u_df)>0:
+        print('under')
+        bets_df = pd.concat([bets_df, u_df])
+    
+    print('bets_df')
+    print(bets_df)
     return bets_df
         
 def main():
@@ -153,8 +159,7 @@ def main():
     total_bankroll = int(input('What is your total bankroll?\n'))
     
     saved_bets = pd.DataFrame()
-    while value_checking:
-       
+    while value_checking:    
         # getting user inputs
         #TODO: error catching is probably useful
         
@@ -182,13 +187,13 @@ def main():
         u_odds = float(input('what are the odds for the under?\n'))
         
         # start kelly crit process 
-        try:
-            bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
-                                 o_odds, u_odds)
-            saved_bets = pd.concat(saved_bets, bets_df)
+        #try:
+        bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
+                             o_odds, u_odds)
+        saved_bets = pd.concat([saved_bets, bets_df])
     
-        except ValueError:
-            print('Value not found, please check your inputs')
+        #except ValueError:
+        #    print('Value not found, please check your inputs')
             
         user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
         if user_cont == 'n':
