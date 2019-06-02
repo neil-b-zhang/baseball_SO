@@ -20,7 +20,7 @@ TEAM_LIST = ['TOR', 'SLN', 'TEX', 'COL', 'KCA', 'NYA', 'OAK', 'CHN', 'BOS',
              'MIA', 'MIL', 'CLE']
 
 def odds_calc():
-    df = pd.read_csv('data.csv')
+    df = pd.read_csv('data/data.csv')
     print(df)
     # save name and team columns in lowercase format
     output_df = pd.DataFrame()
@@ -33,12 +33,12 @@ def odds_calc():
     
     # save output based on date run
     now = datetime.now() # current date and time
-    output_df.round(2).to_csv('calculated_odds_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
+    output_df.round(2).to_csv('/data/calculated_odds_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
     
     return output_df
 
 
-def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name):
+def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
     """
     Function for running kelly criterion calculation and creating
     outputs. 
@@ -48,6 +48,7 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name):
              tbr = total bank roll  
               SO = strikeout line
             name = pitcher's name
+            team = pitcher's team
     """
     #TODO: add automatic logging of bets with positive value
 
@@ -73,10 +74,14 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name):
         # save bets with value to dataframe
         temp_df = pd.DataFrame()
         temp_df.name = name
-        temp_df.
-        
+        temp_df.team = team
+        temp_df.edge = implied_edge
+        temp_df.bet = bet_amount
+        temp_df.to_win = round*(bet_amount * deci_odds, 2)
+        return temp_df
     else:
         print('    No value on the {}.'.format(label))
+        return None
 
 def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     """
@@ -123,10 +128,17 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     print('\nGetting outputs for: {}'.format(name))
     
     # run kelly crit to find value/bet size
-    kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, team)
-    kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, team)
-
-
+    o_df = kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, team)
+    u_df = kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, team)
+    
+    bets_df = pd.DataFrame()
+    if o_df != None:
+        bets_df.concat(bets_df, o_df)
+    if u_df != None:
+        bets_df.concat(bets_df, u_df)
+    
+    return bets_df
+        
 def main():
     # get odds in decimal form from probabilities
     calc_odds_df = odds_calc()
@@ -139,6 +151,8 @@ def main():
         sys.exit('done')
     
     total_bankroll = int(input('What is your total bankroll?\n'))
+    
+    saved_bets = pd.DataFrame()
     while value_checking:
        
         # getting user inputs
@@ -169,8 +183,9 @@ def main():
         
         # start kelly crit process 
         try:
-            kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
-                       o_odds, u_odds)
+            bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
+                                 o_odds, u_odds)
+            saved_bets = pd.concat(saved_bets, bets_df)
     
         except ValueError:
             print('Value not found, please check your inputs')
@@ -178,7 +193,11 @@ def main():
         user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
         if user_cont == 'n':
             value_checking = False
-            
+   
+    # save all bets with value to csv
+    now = datetime.now() # current date and time
+    saved_bets.to_csv('data/saved_bets_{}.csv'.format(now.strftime("%m%d%Y")), index = False)
+    
     print('done')
     
 if __name__== "__main__":
