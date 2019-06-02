@@ -161,9 +161,15 @@ def output_csv(df, reset):
     if file.is_file() and not reset:
         prev_df = pd.read_csv(file_name)
         df = pd.concat([prev_df, df])
-        
-    df.to_csv(file, index = False)
-    
+    writing_outputs = True
+    while writing_outputs:
+        try:
+            df.to_csv(file, index = False)
+            writing_outputs = False
+        except PermissionError:
+            print('    COULD NOT WRITE CSV. PLEASE MAKE SURE IT IS NOT OPEN.')
+            input('    PRESS ENTER WHEN READY TO TRY AGAIN.')
+            
 def main():
     # get odds in decimal form from probabilities
     calc_odds_df = odds_calc()
