@@ -213,13 +213,13 @@ def main():
         u_odds = float(input('what are the odds for the under?\n'))
         
         # start kelly crit process 
-        #try:
-        bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
-                             o_odds, u_odds)
-        saved_bets = pd.concat([saved_bets, bets_df])
+        try:
+            bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
+                                 o_odds, u_odds)
+            saved_bets = pd.concat([saved_bets, bets_df])
     
-        #except ValueError:
-        #    print('Value not found, please check your inputs')
+        except ValueError:
+            print('Value not found, please check your inputs')
             
         user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
         if user_cont == 'reset':
