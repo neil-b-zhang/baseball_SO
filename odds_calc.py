@@ -66,13 +66,13 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
     if output > 0:
         bet_amount = round(output*tbr, 2)
         rounded_io = round(implied_odds, 2)        
-        implied_edge = round((deci_odds-implied_odds)/deci_odds*100, 1)
+        implied_edge = round((deci_odds-implied_odds)/deci_odds, 3)
         to_win = round(bet_amount*deci_odds, 2)
         
         print('    You should bet ${} on {} {} strikeouts.'.format(bet_amount, label, SO))        
         print('        Sportsbook odds: {}'.format(deci_odds))
         print('        Implied expected odds: {}'.format(rounded_io))
-        print('        Implied edge over book: {}%'.format(implied_edge))
+        print('        Implied edge over book: {}%'.format(implied_edge*100))
         
         temp_df = pd.DataFrame({'name': name,
                                 'team': team,
@@ -207,19 +207,23 @@ def main():
                 print('     INVALID PITCHER. PLEASE CHECK YOUR INPUT')
             else:
                 checking_pitcher = False
-            
-        num_SO = input('What is the SO line?\n').lower()
-        o_odds = float(input('what are the odds for the over?\n'))
-        u_odds = float(input('what are the odds for the under?\n'))
         
-        # start kelly crit process 
         try:
-            bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
-                                 o_odds, u_odds)
-            saved_bets = pd.concat([saved_bets, bets_df])
-    
+            num_SO = input('What is the SO line?\n').lower()
+            o_odds = float(input('what are the odds for the over?\n'))
+            u_odds = float(input('what are the odds for the under?\n'))
         except ValueError:
-            print('Value not found, please check your inputs')
+            print('Incorrect input type. Please check your inputs')
+        else:
+        
+            # start kelly crit process 
+            try:
+                bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
+                                     o_odds, u_odds)
+                saved_bets = pd.concat([saved_bets, bets_df])
+        
+            except ValueError:
+                print('Value not found, please check your inputs')
             
         user_cont = input('\nWould you like to keep checking? Y/N\n').lower()
         if user_cont == 'reset':
