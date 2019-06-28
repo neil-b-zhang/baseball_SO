@@ -40,7 +40,8 @@ def odds_calc():
     return output_df
 
 
-def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
+def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team, 
+                    kcf):
     """
     Function for running kelly criterion calculation and creating
     outputs. 
@@ -51,6 +52,7 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
               SO = strikeout line
             name = pitcher's name
             team = pitcher's team
+             kcf = kelly crit factor; amount to divide kelly crit bets by
     """
     #TODO: add automatic logging of bets with positive value
 
@@ -69,7 +71,7 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
         implied_edge = round((deci_odds-implied_odds)/deci_odds, 3)
         to_win = round(bet_amount*deci_odds, 2)
         
-        print('    You should bet ${} on {} {} strikeouts.'.format(bet_amount, label, SO))        
+        print('    You should bet ${} on {} {} strikeouts.'.format(bet_amount, label.upper(), SO))        
         print('        Sportsbook odds: {}'.format(deci_odds))
         print('        Implied expected odds: {}'.format(rounded_io))
         print('        Implied edge over book: {}%'.format(implied_edge*100))
@@ -83,10 +85,10 @@ def kelly_crit_calc(label, deci_odds, implied_odds, tbr, SO, name, team):
 
         return temp_df
     else:
-        print('    No value on the {}.'.format(label))
+        print('    No value on the {}.'.format(label.upper()))
         return pd.DataFrame()
 
-def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
+def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds, kelly_crit_factor):
     """
     Function for setting up the kelly criterion in order to get
     value and betting size based on bank roll
@@ -131,8 +133,10 @@ def kelly_crit(odds_df, tbr, pit, SO, o_odds, u_odds):
     print('\nGetting outputs for: {}'.format(name))
     
     # run kelly crit to find value/bet size
-    o_df = kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, team)
-    u_df = kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, team)
+    o_df = kelly_crit_calc('over', o_odds, io_o, tbr, SO, name, 
+                           team, kelly_crit_factor)
+    u_df = kelly_crit_calc('under', u_odds, io_u, tbr, SO, name, 
+                           team, kelly_crit_factor)
     
     # save bets to dataframe
     bets_df = pd.DataFrame()
@@ -182,6 +186,7 @@ def main():
         sys.exit('done')
     
     total_bankroll = int(input('What is your total bankroll?\n'))
+    kelly_crit_factor = int(input('What would you like to divide bet amounts by?\n'))
     
     saved_bets = pd.DataFrame()
     reset = False # variable for resetting saved bets on the day
@@ -219,7 +224,7 @@ def main():
             # start kelly crit process 
             try:
                 bets_df = kelly_crit(calc_odds_df, total_bankroll, pitcher, num_SO, 
-                                     o_odds, u_odds)
+                                     o_odds, u_odds, kelly_crit_factor)
                 saved_bets = pd.concat([saved_bets, bets_df])
         
             except ValueError:
